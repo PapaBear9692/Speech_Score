@@ -6,128 +6,186 @@
 <title>Speech Score — AI Speech Delivery Coach</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-<div class="wrap">
 
-  <header>
-    <div class="logo">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-        <line x1="12" y1="19" x2="12" y2="23"></line>
-        <line x1="8" y1="23" x2="16" y2="23"></line>
-      </svg>
-    </div>
-    <div class="brand">
-      <h1>Speech Score</h1>
-      <p>AI-Powered Speech Delivery Coach</p>
-    </div>
-    <span class="pill">Gemini 2.5 Flash</span>
-  </header>
-
-
-  <!-- ── Record section ── -->
-  <div id="recSection">
-    <div class="card">
-      <h2>Practice Your Pitch</h2>
-      <p class="sub">Record live or upload an audio file. Gemini analyzes the raw audio natively — words, tone, pacing, confidence and more — no separate speech-to-text needed.</p>
-
-      <div class="field">
-        <label>Product / Context (optional)</label>
-        <textarea id="ctx" placeholder="e.g. 2-minute elevator pitch for our SaaS analytics platform targeting mid-market finance teams…"></textarea>
-      </div>
-
-      <div class="controls">
-        <button class="btn btn-primary" id="startBtn" onclick="startRec()">⏺ Start Recording</button>
-        <button class="btn btn-danger"  id="stopBtn"  onclick="stopRec()" disabled>⏹ Done</button>
-        <div class="rec-ind" id="recInd"><div class="rec-dot"></div><span id="recTime">0:00</span></div>
-      </div>
-
-      <div class="wave-wrap" id="waveWrap"><canvas id="waveform" width="900" height="64"></canvas></div>
-
-      <div class="dropzone" id="dropzone"
-        onclick="document.getElementById('fileInput').click()"
-        ondragover="event.preventDefault(); this.classList.add('over')"
-        ondragleave="this.classList.remove('over')"
-        ondrop="onDrop(event)">
-        <input type="file" id="fileInput" accept="audio/*" onchange="onFile(event)">
-        <p>📁 Or drag & drop / click to upload an audio file (mp3, wav, webm, m4a, ogg, flac)</p>
-      </div>
-    </div>
-
-    <div class="err" id="errBox"></div>
-    <div class="loader" id="loader">
-      <div class="spinner"></div>
-      <p>Uploading & analysing with Gemini 2.5 Flash…</p>
-    </div>
-  </div>
-
-  <!-- ── Results ── -->
-  <div id="results">
-
-    <div class="score-hero">
-      <div class="ring">
-        <svg width="140" height="140" viewBox="0 0 140 140">
-          <circle class="track" cx="70" cy="70" r="60"/>
-          <circle class="fill" id="ringFill" cx="70" cy="70" r="60" stroke-dasharray="377" stroke-dashoffset="377"/>
-        </svg>
-        <div class="ring-center">
-          <div class="ring-num" id="ringNum">—</div>
-          <div class="ring-lbl">/ 100</div>
+  <!-- Header -->
+  <header class="app-header">
+    <div class="container d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center">
+        <div class="brand d-flex align-items-center">
+          <img src="{{ url_for('static', filename='images/logo1.png') }}" alt="Speech Score" class="brand-logo-img">
+          <div class="brand-text ml-3">
+            <h2 class="brand-name m-0">Speech Score</h2>
+            <p class="brand-sub m-0">AI Speech Coach</p>
+          </div>
         </div>
       </div>
-      <div class="score-info">
-        <h2>Analysis Complete</h2>
-        <p class="imp" id="impression">—</p>
-        <span class="badge" id="energyBadge">—</span>
+      <img src="{{ url_for('static', filename='images/logo2.png') }}" alt="Speech Score" class="second-logo-img">
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="page-wrapper">
+    <div class="container">
+      <!-- Hero + Form Section -->
+      <div class="row align-items-center justify-content-center g-4 mb-5">
+        <!-- Left: Hero Copy -->
+        <div class="col-lg-6 pr-lg-5 hero-copy">
+          <p class="small-badge">Gemini 2.5 Flash • Real-time Analysis • AI-Powered</p>
+          <h1 class="page-title">Practice Your Presentation</h1>
+          <p class="page-subtitle">
+            Record your speech or upload an audio file. Our AI coach analyzes your delivery, tone, pacing, clarity, and more.
+          </p>
+
+          <ul class="hero-points">
+            <li><i class="fas fa-microphone"></i> Record or Upload</li>
+            <li><i class="fas fa-chart-line"></i> Get Detailed Feedback</li>
+            <li><i class="fas fa-brain"></i> AI-Powered Analysis</li>
+          </ul>
+        </div>
+
+        <!-- Right: Form Card -->
+        <div class="col-lg-5">
+          <div class="verify-card">
+            <h2 class="card-title">Start Recording</h2>
+            <p class="card-hint">Record live or upload your speech for analysis.</p>
+
+            <form class="verify-form" id="recSection">
+              <p id="input-warning" style="color:red; display:none; font-weight:400;"></p>
+              
+              <div class="form-group">
+                <label for="ctx">Product / Context (optional)</label>
+                <textarea id="ctx" class="form-control form-textarea-lg" placeholder="e.g., 2-minute elevator pitch for our SaaS platform targeting mid-market finance teams…"></textarea>
+              </div>
+
+              <div class="controls">
+                <button class="btn btn-success btn-uniform" id="startBtn" onclick="startRec()" type="button">⏺ Record</button>
+                <button class="btn btn-danger btn-uniform" id="stopBtn" onclick="stopRec()" type="button" disabled>⏹ Stop</button>
+                <div class="rec-ind" id="recInd"><div class="rec-dot"></div><span id="recTime">0:00</span></div>
+              </div>
+
+              <div class="wave-wrap" id="waveWrap"><canvas id="waveform" width="900" height="64"></canvas></div>
+
+              <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()" ondragover="event.preventDefault(); this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="onDrop(event)">
+                <input type="file" id="fileInput" accept="audio/*" onchange="onFile(event)">
+                <p>📁 Or drag & drop / click to upload (mp3, wav, webm, m4a, ogg, flac)</p>
+              </div>
+
+              <!-- Loader -->
+              <div id="loader" class="loader" style="display:none;">
+                <div class="spinner"></div>
+                <span>Analyzing with Gemini 2.5 Flash…</span>
+              </div>
+
+              <div class="err" id="errBox"></div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results Section (Hidden Initially) -->
+      <div id="results" style="display:none;">
+        <div class="section-block scratch-example">
+          <div class="score-hero">
+            <div class="ring">
+              <svg width="140" height="140" viewBox="0 0 140 140">
+                <circle class="track" cx="70" cy="70" r="60"/>
+                <circle class="fill" id="ringFill" cx="70" cy="70" r="60" stroke-dasharray="377" stroke-dashoffset="377"/>
+              </svg>
+              <div class="ring-center">
+                <div class="ring-num" id="ringNum">—</div>
+                <div class="ring-lbl">/ 100</div>
+              </div>
+            </div>
+            <div class="score-info">
+              <h2>Analysis Complete</h2>
+              <p class="imp" id="impression">—</p>
+              <span class="badge" id="energyBadge">—</span>
+            </div>
+          </div>
+
+          <div class="focus">
+            <div class="focus-ico">🎯</div>
+            <div class="focus-txt">
+              <h3>Next Practice Focus</h3>
+              <p id="nextFocus">—</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Performance Details -->
+        <section class="section-block">
+          <div class="row">
+            <div class="col-lg-6 mb-4">
+              <div class="card card-uniform">
+                <h3>Performance Dimensions</h3>
+                <div id="dims" class="card-content"></div>
+              </div>
+            </div>
+            <div class="col-lg-6 mb-4">
+              <div class="card card-uniform">
+                <h3>Transcript</h3>
+                <div class="transcript" id="transcript" class="card-content">—</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Strengths & Filler Words -->
+        <section class="section-block">
+          <div class="row">
+            <div class="col-lg-6 mb-4">
+              <div class="card card-uniform card-compact">
+                <h3>✅ Strengths</h3>
+                <div class="tags card-content" id="strengths"></div>
+              </div>
+            </div>
+            <div class="col-lg-6 mb-4">
+              <div class="card card-uniform card-compact">
+                <h3>🔤 Filler Words</h3>
+                <p style="font-size:13px;color:var(--muted);margin-bottom:10px" id="fillerNote">—</p>
+                <div class="tags card-content" id="fillerTags"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Improvements -->
+        <section class="section-block">
+          <div class="card">
+            <h3>💡 Suggestions for Improvement</h3>
+            <div id="improvements"></div>
+          </div>
+        </section>
+
+        <!-- Reset Button -->
+        <section class="section-block text-center">
+          <button class="btn btn-ghost" onclick="reset()">🔄 Practice Again</button>
+        </section>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="container d-flex flex-wrap justify-content-between align-items-center">
+      <p class="mb-0">© 2025 Speech Score. All rights reserved.</p>
+      <div class="footer-links">
+        <a href="#about">About</a>
+        <a href="#contact">Contact</a>
       </div>
     </div>
+  </footer>
 
-    <div class="focus">
-      <div class="focus-ico">🎯</div>
-      <div class="focus-txt">
-        <h3>Next Practice Focus</h3>
-        <p id="nextFocus">—</p>
-      </div>
-    </div>
-
-    <div class="g2">
-      <div class="card">
-        <h3>Performance Dimensions</h3>
-        <div id="dims"></div>
-      </div>
-      <div class="card">
-        <h3>Transcript</h3>
-        <div class="transcript" id="transcript">—</div>
-      </div>
-    </div>
-
-    <div class="g2">
-      <div class="card">
-        <h3>✅ Strengths</h3>
-        <div class="tags" id="strengths"></div>
-      </div>
-      <div class="card">
-        <h3>🔤 Filler Words</h3>
-        <p style="font-size:13px;color:var(--muted);margin-bottom:10px" id="fillerNote">—</p>
-        <div class="tags" id="fillerTags"></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3>💡 Suggestions for Improvement</h3>
-      <div id="improvements"></div>
-    </div>
-
-    <div class="footer">
-      <button class="btn btn-ghost" onclick="reset()">🔄 Practice Again</button>
-    </div>
-  </div>
-
-</div><!-- /wrap -->
-
-<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <!-- Scripts -->
+  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>
