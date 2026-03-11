@@ -5,24 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Speech Score — AI Speech Delivery Coach</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
 <div class="wrap">
 
   <header>
-    <div class="logo">🎙️</div>
+    <div class="logo">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+        <line x1="12" y1="19" x2="12" y2="23"></line>
+        <line x1="8" y1="23" x2="16" y2="23"></line>
+      </svg>
+    </div>
     <div class="brand">
       <h1>Speech Score</h1>
       <p>AI-Powered Speech Delivery Coach</p>
     </div>
-    <span class="pill">⚡ Gemini 2.5 Flash</span>
+    <span class="pill">Gemini 2.5 Flash</span>
   </header>
 
-  <div class="notice">
-    ⚙️ Requires <strong>GEMINI_API_KEY</strong> environment variable · Uses <code>google-genai</code> SDK with <code>client.files.upload()</code>
-  </div>
 
   <!-- ── Record section ── -->
   <div id="recSection">
@@ -37,7 +41,7 @@
 
       <div class="controls">
         <button class="btn btn-primary" id="startBtn" onclick="startRec()">⏺ Start Recording</button>
-        <button class="btn btn-danger"  id="stopBtn"  onclick="stopRec()" disabled>⏹ Stop</button>
+        <button class="btn btn-danger"  id="stopBtn"  onclick="stopRec()" disabled>⏹ Done</button>
         <div class="rec-ind" id="recInd"><div class="rec-dot"></div><span id="recTime">0:00</span></div>
       </div>
 
