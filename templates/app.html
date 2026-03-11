@@ -43,7 +43,9 @@
 
           <ul class="hero-points">
             <li><i class="fas fa-microphone"></i> Record or Upload</li>
+            <br>
             <li><i class="fas fa-chart-line"></i> Get Detailed Feedback</li>
+            <br>
             <li><i class="fas fa-brain"></i> AI-Powered Analysis</li>
           </ul>
         </div>
@@ -75,14 +77,16 @@
                 <p>📁 Or drag & drop / click to upload (mp3, wav, webm, m4a, ogg, flac)</p>
               </div>
 
-              <!-- Loader -->
-              <div id="loader" class="loader" style="display:none;">
-                <div class="spinner"></div>
-                <span>Analyzing with Gemini 2.5 Flash…</span>
-              </div>
-
               <div class="err" id="errBox"></div>
             </form>
+
+            <!-- Loader Overlay -->
+            <div id="loader" class="loader-overlay">
+              <div class="loader-content">
+                <div class="spinner"></div>
+                <span>⏳ Analyzing your speech with Gemini 2.5 Flash…</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -162,8 +166,9 @@
           </div>
         </section>
 
-        <!-- Reset Button -->
+        <!-- Download & Reset Buttons -->
         <section class="section-block text-center">
+          <button class="btn btn-primary" onclick="downloadPDF()" style="margin-right:12px;">📥 Download Report (PDF)</button>
           <button class="btn btn-ghost" onclick="reset()">🔄 Practice Again</button>
         </section>
       </div>
@@ -186,6 +191,7 @@
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>

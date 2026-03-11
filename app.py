@@ -127,7 +127,7 @@ def analyze_speech():
             contents=[prompt, uploaded],
         )
 
-        raw = response.text.strip()
+        raw = response.text.strip() # type: ignore
 
         # Strip accidental markdown fences
         if raw.startswith("```"):
