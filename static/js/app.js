@@ -1,0 +1,168 @@
+let recorder, stream, analyser, animId, timer, recSecs = 0, chunks = [];
+
+async function startRec() {
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch { return showErr("Microphone access denied."); }
+
+  // Visualiser
+  const ctx = new AudioContext();
+  const src = ctx.createMediaStreamSource(stream);
+  analyser = ctx.createAnalyser(); analyser.fftSize = 256;
+  src.connect(analyser);
+  document.getElementById('waveWrap').classList.add('on');
+  drawWave();
+
+  recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+  chunks = [];
+  recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+  recorder.onstop = () => submit(new Blob(chunks, { type: 'audio/webm' }), 'recording.webm');
+  recorder.start(100);
+
+  document.getElementById('startBtn').disabled = true;
+  document.getElementById('stopBtn').disabled  = false;
+  document.getElementById('recInd').classList.add('on');
+  recSecs = 0;
+  timer = setInterval(() => {
+    recSecs++;
+    document.getElementById('recTime').textContent =
+      Math.floor(recSecs/60) + ':' + String(recSecs%60).padStart(2,'0');
+  }, 1000);
+}
+
+function stopRec() {
+  recorder?.stop();
+  stream?.getTracks().forEach(t => t.stop());
+  clearInterval(timer);
+  cancelAnimationFrame(animId);
+  document.getElementById('recInd').classList.remove('on');
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('stopBtn').disabled  = true;
+}
+
+function drawWave() {
+  const canvas = document.getElementById('waveform');
+  const c = canvas.getContext('2d');
+  const buf = new Uint8Array(analyser.frequencyBinCount);
+  (function loop() {
+    animId = requestAnimationFrame(loop);
+    analyser.getByteTimeDomainData(buf);
+    c.fillStyle = '#171726'; c.fillRect(0,0,canvas.width,canvas.height);
+    c.strokeStyle = '#7c6eff'; c.lineWidth = 2; c.beginPath();
+    const step = canvas.width / buf.length;
+    buf.forEach((v, i) => {
+      const y = (v/128) * canvas.height / 2;
+      i ? c.lineTo(i*step, y) : c.moveTo(0, y);
+    });
+    c.stroke();
+  })();
+}
+
+function onFile(e)  { const f = e.target.files[0]; if (f) submit(f, f.name); }
+function onDrop(e)  {
+  e.preventDefault(); document.getElementById('dropzone').classList.remove('over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('audio/')) submit(f, f.name);
+}
+
+async function submit(blob, name) {
+  clearErr();
+  document.getElementById('loader').classList.add('on');
+  document.getElementById('dropzone').style.display = 'none';
+
+  const fd = new FormData();
+  fd.append('audio', blob, name);
+  fd.append('product_context', document.getElementById('ctx').value);
+
+  try {
+    const res  = await fetch('/analyze', { method: 'POST', body: fd });
+    const data = await res.json();
+    document.getElementById('loader').classList.remove('on');
+    if (data.error) { showErr(data.error); document.getElementById('dropzone').style.display=''; return; }
+    render(data.analysis);
+  } catch(e) {
+    document.getElementById('loader').classList.remove('on');
+    showErr('Network error: ' + e.message);
+    document.getElementById('dropzone').style.display = '';
+  }
+}
+
+function render(a) {
+  document.getElementById('recSection').style.display = 'none';
+  document.getElementById('results').style.display = 'block';
+
+  // Score ring
+  const score = a.overall_score ?? 0;
+  const circ  = 377;
+  const col   = score >= 75 ? '#3ee8a0' : score >= 50 ? '#fbbf24' : '#ff6b8a';
+  const fill  = document.getElementById('ringFill');
+  setTimeout(() => { fill.style.strokeDashoffset = circ - (score/100)*circ; }, 80);
+  fill.style.stroke = col;
+  document.getElementById('ringNum').textContent = score;
+  document.getElementById('ringNum').style.color = col;
+
+  document.getElementById('impression').textContent = a.overall_impression ?? '';
+
+  const en = (a.energy_level ?? 'medium').toLowerCase();
+  const eb = document.getElementById('energyBadge');
+  eb.textContent = '⚡ ' + en.charAt(0).toUpperCase() + en.slice(1) + ' Energy';
+  eb.className = 'badge badge-' + en;
+
+  document.getElementById('nextFocus').textContent = a.next_practice_focus ?? '';
+
+  // Dimensions
+  const dimLabels = {
+    clarity:          'Clarity',
+    tone_confidence:  'Tone & Confidence',
+    pacing:           'Pacing',
+    product_knowledge:'Product Knowledge',
+    persuasiveness:   'Persuasiveness',
+    vocabulary:       'Vocabulary',
+  };
+  const dims = document.getElementById('dims');
+  dims.innerHTML = '';
+  for (const [k, label] of Object.entries(dimLabels)) {
+    const d  = (a.dimensions ?? {})[k] ?? {};
+    const sc = d.score ?? 0;
+    const c  = sc >= 75 ? '#3ee8a0' : sc >= 50 ? '#fbbf24' : '#ff6b8a';
+    dims.innerHTML += `
+      <div class="dim" title="${d.feedback ?? ''}">
+        <div class="dim-row">
+          <span class="dim-name">${label}</span>
+          <span class="dim-sc" style="color:${c}">${sc}</span>
+        </div>
+        <div class="bar"><div class="bar-fill" style="width:0%;background:${c}" data-w="${sc}%"></div></div>
+      </div>`;
+  }
+  setTimeout(() => { document.querySelectorAll('.bar-fill').forEach(el => el.style.width = el.dataset.w); }, 150);
+
+  document.getElementById('transcript').textContent = a.transcript ?? 'No transcript available.';
+
+  document.getElementById('strengths').innerHTML =
+    (a.strengths ?? []).map(s => `<span class="tag tag-g">✓ ${s}</span>`).join('');
+
+  const fw = a.filler_words ?? {};
+  document.getElementById('fillerNote').textContent =
+    `Detected ${fw.count ?? 0} filler occurrence(s). ${fw.feedback ?? ''}`;
+  document.getElementById('fillerTags').innerHTML =
+    (fw.words ?? []).slice(0, 15).map(w => `<span class="tag tag-y">${w}</span>`).join('');
+
+  document.getElementById('improvements').innerHTML =
+    (a.improvements ?? []).map(i => `
+      <div class="imp-item">
+        <h4>${i.issue}</h4>
+        <p>${i.detail}</p>
+        <div class="sug">💡 ${i.suggestion}</div>
+      </div>`).join('');
+}
+
+function reset() {
+  document.getElementById('results').style.display    = 'none';
+  document.getElementById('recSection').style.display = 'block';
+  document.getElementById('dropzone').style.display   = '';
+  document.getElementById('fileInput').value          = '';
+  document.getElementById('waveWrap').classList.remove('on');
+  chunks = [];
+}
+
+function showErr(msg) { const e = document.getElementById('errBox'); e.textContent = msg; e.classList.add('on'); }
+function clearErr()   { document.getElementById('errBox').classList.remove('on'); }

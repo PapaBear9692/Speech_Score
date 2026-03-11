@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Speech Score — AI Speech Delivery Coach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="logo">🎙️</div>
+    <div class="brand">
+      <h1>Speech Score</h1>
+      <p>AI-Powered Speech Delivery Coach</p>
+    </div>
+    <span class="pill">⚡ Gemini 2.5 Flash</span>
+  </header>
+
+  <div class="notice">
+    ⚙️ Requires <strong>GEMINI_API_KEY</strong> environment variable · Uses <code>google-genai</code> SDK with <code>client.files.upload()</code>
+  </div>
+
+  <!-- ── Record section ── -->
+  <div id="recSection">
+    <div class="card">
+      <h2>Practice Your Pitch</h2>
+      <p class="sub">Record live or upload an audio file. Gemini analyzes the raw audio natively — words, tone, pacing, confidence and more — no separate speech-to-text needed.</p>
+
+      <div class="field">
+        <label>Product / Context (optional)</label>
+        <textarea id="ctx" placeholder="e.g. 2-minute elevator pitch for our SaaS analytics platform targeting mid-market finance teams…"></textarea>
+      </div>
+
+      <div class="controls">
+        <button class="btn btn-primary" id="startBtn" onclick="startRec()">⏺ Start Recording</button>
+        <button class="btn btn-danger"  id="stopBtn"  onclick="stopRec()" disabled>⏹ Stop</button>
+        <div class="rec-ind" id="recInd"><div class="rec-dot"></div><span id="recTime">0:00</span></div>
+      </div>
+
+      <div class="wave-wrap" id="waveWrap"><canvas id="waveform" width="900" height="64"></canvas></div>
+
+      <div class="dropzone" id="dropzone"
+        onclick="document.getElementById('fileInput').click()"
+        ondragover="event.preventDefault(); this.classList.add('over')"
+        ondragleave="this.classList.remove('over')"
+        ondrop="onDrop(event)">
+        <input type="file" id="fileInput" accept="audio/*" onchange="onFile(event)">
+        <p>📁 Or drag & drop / click to upload an audio file (mp3, wav, webm, m4a, ogg, flac)</p>
+      </div>
+    </div>
+
+    <div class="err" id="errBox"></div>
+    <div class="loader" id="loader">
+      <div class="spinner"></div>
+      <p>Uploading & analysing with Gemini 2.5 Flash…</p>
+    </div>
+  </div>
+
+  <!-- ── Results ── -->
+  <div id="results">
+
+    <div class="score-hero">
+      <div class="ring">
+        <svg width="140" height="140" viewBox="0 0 140 140">
+          <circle class="track" cx="70" cy="70" r="60"/>
+          <circle class="fill" id="ringFill" cx="70" cy="70" r="60" stroke-dasharray="377" stroke-dashoffset="377"/>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-num" id="ringNum">—</div>
+          <div class="ring-lbl">/ 100</div>
+        </div>
+      </div>
+      <div class="score-info">
+        <h2>Analysis Complete</h2>
+        <p class="imp" id="impression">—</p>
+        <span class="badge" id="energyBadge">—</span>
+      </div>
+    </div>
+
+    <div class="focus">
+      <div class="focus-ico">🎯</div>
+      <div class="focus-txt">
+        <h3>Next Practice Focus</h3>
+        <p id="nextFocus">—</p>
+      </div>
+    </div>
+
+    <div class="g2">
+      <div class="card">
+        <h3>Performance Dimensions</h3>
+        <div id="dims"></div>
+      </div>
+      <div class="card">
+        <h3>Transcript</h3>
+        <div class="transcript" id="transcript">—</div>
+      </div>
+    </div>
+
+    <div class="g2">
+      <div class="card">
+        <h3>✅ Strengths</h3>
+        <div class="tags" id="strengths"></div>
+      </div>
+      <div class="card">
+        <h3>🔤 Filler Words</h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:10px" id="fillerNote">—</p>
+        <div class="tags" id="fillerTags"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>💡 Suggestions for Improvement</h3>
+      <div id="improvements"></div>
+    </div>
+
+    <div class="footer">
+      <button class="btn btn-ghost" onclick="reset()">🔄 Practice Again</button>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
