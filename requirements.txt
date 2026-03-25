@@ -1,8 +1,11 @@
 flask>=3.0.0
-google-genai>=1.0.0
 python-dotenv
-llama-index
-pinecone-client
-sentence-transformers
-torch
+google-genai
 weasyprint
+llama-index
+llama-index-embeddings-huggingface
+llama-index-vector-stores-pinecone
+pinecone-client
+transformers
+torch
+sentence-transformers
