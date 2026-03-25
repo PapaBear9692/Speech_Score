@@ -1,8 +1,16 @@
-let recorder, stream, analyser, animId, timer, recSecs = 0, chunks = [];
+let recorder, stream, analyser, animId, timer, recSecs = 0, chunks = [], uploadedFile = null;
 
 async function startRec() {
   try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
   catch { return showErr("Microphone access denied."); }
+
+  clearInputWarning(); // Clear any previous warnings
+  
+  // Hide upload elements if a recording is started
+  document.getElementById('dropzone').style.display = 'none';
+  document.getElementById('upload-submit-button').style.display = 'none';
+  document.getElementById('file-name-display').textContent = '';
+  uploadedFile = null;
 
   // Visualiser
   const ctx = new AudioContext();
@@ -15,7 +23,17 @@ async function startRec() {
   recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
   chunks = [];
   recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-  recorder.onstop = () => submit(new Blob(chunks, { type: 'audio/webm' }), 'recording.webm');
+  recorder.onstop = () => {
+    const contextInput = document.getElementById('ctx');
+    if (!contextInput.value.trim()) {
+        showInputWarning('Product context is required to submit a recording.');
+        // Re-enable start button to allow user to try again after filling the context
+        document.getElementById('startBtn').disabled = false;
+        document.getElementById('stopBtn').disabled = true; // Also disable stop button again
+        return; 
+    }
+    submit(new Blob(chunks, { type: 'audio/webm' }), 'recording.webm');
+  };
   recorder.start(100);
 
   document.getElementById('startBtn').disabled = true;
@@ -57,21 +75,55 @@ function drawWave() {
   })();
 }
 
-function onFile(e)  { const f = e.target.files[0]; if (f) submit(f, f.name); }
+function handleFileUpload(file) {
+    if (file && file.type.startsWith('audio/')) {
+        uploadedFile = file;
+        document.getElementById('file-name-display').textContent = `File: ${file.name}`;
+        
+        // Hide recording controls and show the upload submit button
+        document.getElementById('startBtn').style.display = 'none';
+        document.getElementById('stopBtn').style.display = 'none';
+        document.getElementById('recInd').classList.remove('on');
+        document.getElementById('upload-submit-button').style.display = 'inline-block';
+        
+        clearErr();
+        clearInputWarning(); // Clear context warnings when a file is chosen
+    } else {
+        showErr('Please upload a valid audio file (mp3, wav, webm, etc.).');
+    }
+}
+
+function analyzeUploadedFile() {
+    const contextInput = document.getElementById('ctx');
+    if (!contextInput.value.trim()) {
+        showInputWarning('Product context is required to submit an uploaded file.');
+        return;
+    }
+    if (uploadedFile) {
+        submit(uploadedFile, uploadedFile.name);
+    } else {
+        showErr('No file has been uploaded.'); // This is a general error, so showErr is fine
+    }
+}
+
+
+function onFile(e)  { handleFileUpload(e.target.files[0]); }
 function onDrop(e)  {
   e.preventDefault(); document.getElementById('dropzone').classList.remove('over');
-  const f = e.dataTransfer.files[0];
-  if (f && f.type.startsWith('audio/')) submit(f, f.name);
+  handleFileUpload(e.dataTransfer.files[0]);
 }
 
 async function submit(blob, name) {
   clearErr();
+  clearInputWarning();
   document.getElementById('loader').classList.add('on');
   document.getElementById('dropzone').style.display = 'none';
+  document.getElementById('upload-submit-button').style.display = 'none';
 
   const fd = new FormData();
   fd.append('audio', blob, name);
-  fd.append('product_context', document.getElementById('ctx').value);
+  const contextInput = document.getElementById('ctx');
+  fd.append('product_context', contextInput.value);
 
   try {
     const res  = await fetch('/analyze', { method: 'POST', body: fd });
@@ -86,6 +138,7 @@ async function submit(blob, name) {
     setTimeout(() => {
       document.getElementById('loader').classList.remove('on');
       render(data.analysis);
+      contextInput.value = ''; // Clear the textarea
     }, 600);
   } catch(e) {
     document.getElementById('loader').classList.remove('on');
@@ -97,6 +150,7 @@ async function submit(blob, name) {
 function render(a) {
   document.getElementById('recSection').style.display = 'none';
   document.getElementById('results').style.display = 'block';
+  document.getElementById('try-again-container').style.display = 'block'; // Show Try Again button
 
   // Score ring
   const score = a.overall_score ?? 0;
@@ -169,6 +223,17 @@ function reset() {
   document.getElementById('dropzone').style.display   = '';
   document.getElementById('fileInput').value          = '';
   document.getElementById('waveWrap').classList.remove('on');
+  document.getElementById('try-again-container').style.display = 'none'; // Hide Try Again button
+  
+  // Reset UI for new submission
+  uploadedFile = null;
+  document.getElementById('file-name-display').textContent = '';
+  document.getElementById('upload-submit-button').style.display = 'none';
+  document.getElementById('startBtn').style.display = 'inline-block';
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('stopBtn').style.display = 'inline-block';
+  document.getElementById('stopBtn').disabled = true;
+
   chunks = [];
 }
 
@@ -362,3 +427,14 @@ function downloadPDF() {
 
 function showErr(msg) { const e = document.getElementById('errBox'); e.textContent = msg; e.classList.add('on'); }
 function clearErr()   { document.getElementById('errBox').classList.remove('on'); }
+
+function showInputWarning(msg) {
+  const warningEl = document.getElementById('input-warning');
+  warningEl.textContent = msg;
+  warningEl.style.display = 'block';
+}
+
+function clearInputWarning() {
+  const warningEl = document.getElementById('input-warning');
+  warningEl.style.display = 'none';
+}

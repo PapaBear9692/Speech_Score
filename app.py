@@ -10,6 +10,8 @@ from dotenv import load_dotenv
 from llama_config import initialize_index
 from prompt import ANALYSIS_PROMPT
 
+import re
+
 app = Flask(__name__)
 load_dotenv()
 
@@ -17,6 +19,44 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 # ─────────────────────────────────────────────────────────────────────────────
+
+def sanitize_text(text):
+    """
+    A more aggressive sanitizer for LLM output.
+    - Removes leading non-alphanumeric characters.
+    - Collapses multiple whitespace characters.
+    - Fixes text where letters are separated by spaces (e.g., 'H e l l o').
+    """
+    if not isinstance(text, str):
+        return text
+
+    # Remove leading junk characters but keep legitimate sentence starters
+    sanitized = re.sub(r"^[^\w'\"(]+", "", text.strip())
+
+    # Heuristic: If the text has an unusually high ratio of spaces to characters,
+    # it's likely spaced out.
+    char_count = len(sanitized.replace(" ", ""))
+    space_count = sanitized.count(" ")
+
+    # If more than half the string is spaces, and it's not just a few chars,
+    # assume it's an artifact and remove all spaces.
+    if char_count > 5 and space_count > char_count * 0.8:
+        sanitized = "".join(sanitized.split())
+    else:
+        # Otherwise, just collapse multiple spaces into one
+        sanitized = re.sub(r"\s+", " ", sanitized)
+
+    return sanitized.strip()
+
+def sanitize_analysis_result(result):
+    """Recursively sanitizes all string values in the analysis result."""
+    if isinstance(result, dict):
+        return {k: sanitize_analysis_result(v) for k, v in result.items()}
+    elif isinstance(result, list):
+        return [sanitize_analysis_result(item) for item in result]
+    elif isinstance(result, str):
+        return sanitize_text(result)
+    return result
 
 
 # ─── LlamaIndex/Pinecone RAG Setup ──────────────────────────────────────────
@@ -124,10 +164,16 @@ def analyze_speech():
 
         result = json.loads(raw)
 
+        # ─── Sanitize AI Response to Prevent Artifacts ──────────────────────
+        logging.info("Sanitizing AI response...")
+        sanitized_result = sanitize_analysis_result(result)
+        logging.info("Sanitization complete.")
+        # ───────────────────────────────────────────────────────────────────
+
         # Clean up uploaded file from Google's servers
         client.files.delete(name=uploaded.name) # type: ignore
         logging.info("Analysis complete. Returning JSON response.")
-        return jsonify({"success": True, "analysis": result})
+        return jsonify({"success": True, "analysis": sanitized_result})
 
     except json.JSONDecodeError as e:
         logging.error(f"JSONDecodeError: Could not parse AI response. Raw text: {response.text}", exc_info=True)

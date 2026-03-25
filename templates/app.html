@@ -67,8 +67,11 @@
               <div class="controls">
                 <button class="btn btn-success btn-uniform" id="startBtn" onclick="startRec()" type="button">⏺ Record</button>
                 <button class="btn btn-danger btn-uniform" id="stopBtn" onclick="stopRec()" type="button" disabled>⏹ Stop</button>
+                <button class="btn btn-primary btn-uniform" id="upload-submit-button" onclick="analyzeUploadedFile()" type="button" style="display:none;">Submit Upload</button>
                 <div class="rec-ind" id="recInd"><div class="rec-dot"></div><span id="recTime">0:00</span></div>
               </div>
+
+              <p id="file-name-display" style="text-align: center; margin-top: 10px; color: #ccc;"></p>
 
               <div class="wave-wrap" id="waveWrap"><canvas id="waveform" width="900" height="64"></canvas></div>
 
@@ -84,8 +87,13 @@
             <div id="loader" class="loader-overlay">
               <div class="loader-content">
                 <div class="spinner"></div>
-                <span>⏳ Analyzing your speech with Gemini 2.5 Flash…</span>
+                <span>⏳ Analyzing your speech with Gemini 1.5 Flash…</span>
               </div>
+            </div>
+            
+            <!-- Try Again Button - Initially hidden -->
+            <div id="try-again-container" style="display:none; text-align: center; margin-top: 20px;">
+              <button class="btn btn-primary" onclick="reset()">🔄 Try Again</button>
             </div>
           </div>
         </div>
