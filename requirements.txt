@@ -5,3 +5,4 @@ llama-index
 pinecone-client
 sentence-transformers
 torch
+weasyprint

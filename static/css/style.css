@@ -443,7 +443,7 @@ header {
 .btn:disabled { opacity: .38; cursor: not-allowed; transform: none !important; }
 
 /* ── Controls row ── */
-.controls { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.controls { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-top: 1.5rem; }
 
 .rec-ind { display: none; align-items: center; gap: 8px; font-size: 13px; color: #dc3545; font-weight: 500; }
 .rec-ind.on { display: flex; }

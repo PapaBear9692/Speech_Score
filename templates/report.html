@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Speech Score Report</title>
+</head>
+<body>
+    <div class="report-container">
+        <header class="report-header">
+            <h1>Speech Analysis Report</h1>
+        </header>
+
+        <section>
+            <h2>Analysis Overview</h2>
+            <p><strong>Overall Score:</strong> {{ analysis.overall_score }} / 100</p>
+            <p><strong>Overall Impression:</strong> {{ analysis.overall_impression }}</p>
+            <p><strong>Energy Level:</strong> {{ analysis.energy_level }}</p>
+            <p><strong>Next Practice Focus:</strong> {{ analysis.next_practice_focus }}</p>
+        </section>
+
+        <section>
+            <h2>Performance Dimensions</h2>
+            {% for key, dim in analysis.dimensions.items() %}
+            <div class="dimension-card">
+                <h3>{{ key | replace('_', ' ') | title }} (Score: {{ dim.score }}/100)</h3>
+                <p>{{ dim.feedback }}</p>
+            </div>
+            {% endfor %}
+        </section>
+
+        <section>
+            <h2>Strengths</h2>
+            <ul>
+                {% for strength in analysis.strengths %}
+                <li>{{ strength }}</li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        <section>
+            <h2>Suggestions for Improvement</h2>
+            {% for item in analysis.improvements %}
+            <div class="improvement-item">
+                <h3>{{ item.issue }}</h3>
+                <p>{{ item.detail }}</p>
+                <p><strong>Suggestion:</strong> {{ item.suggestion }}</p>
+            </div>
+            {% endfor %}
+        </section>
+
+        <section>
+            <h2>Filler Words</h2>
+            <p><strong>Count:</strong> {{ analysis.filler_words.count }}</p>
+            <p>{{ analysis.filler_words.feedback }}</p>
+            {% if analysis.filler_words.words %}
+            <p><strong>Detected words:</strong> {{ analysis.filler_words.words | join(', ') }}</p>
+            {% endif %}
+        </section>
+
+        <section>
+            <h2>Transcript</h2>
+            <div class="transcript">
+                <p>{{ analysis.transcript }}</p>
+            </div>
+        </section>
+        
+        <footer class="report-footer">
+            <p>This report was generated on {{ analysis.generated_date }}.</p>
+        </footer>
+    </div>
+</body>
+</html>

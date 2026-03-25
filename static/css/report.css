@@ -1,0 +1,97 @@
+body {
+    font-family: sans-serif;
+    line-height: 1.5;
+    color: #333;
+    background-color: #fff;
+}
+
+.report-container {
+    max-width: 8.5in;
+    margin: 0 auto;
+    padding: 0.5in;
+}
+
+/* --- HEADINGS --- */
+h1, h2, h3 {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #222;
+    margin: 0;
+    line-height: 1.2;
+}
+
+h1 {
+    font-size: 28pt;
+    font-weight: bold;
+    text-align: center;
+    border-bottom: 2px solid #000;
+    padding-bottom: 12pt;
+    margin-bottom: 24pt;
+}
+
+h2 {
+    font-size: 18pt;
+    font-weight: bold;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 6pt;
+    margin-top: 24pt;
+    margin-bottom: 12pt;
+}
+
+h3 {
+    font-size: 14pt;
+    font-weight: bold;
+    margin-top: 16pt;
+    margin-bottom: 4pt;
+}
+
+/* --- TEXT & PARAGRAPHS --- */
+p {
+    margin-top: 0;
+    margin-bottom: 10pt;
+}
+
+strong {
+    font-weight: bold;
+}
+
+ul {
+    padding-left: 20pt;
+    margin-bottom: 10pt;
+}
+
+li {
+    margin-bottom: 5pt;
+}
+
+/* --- SECTIONS --- */
+section {
+    margin-bottom: 12pt;
+}
+
+.dimension-card,
+.improvement-item {
+    margin-bottom: 12pt;
+}
+
+.transcript p {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-style: italic;
+    color: #555;
+    border-left: 3px solid #eee;
+    padding-left: 12pt;
+}
+
+/* --- FOOTER --- */
+.report-footer {
+    text-align: center;
+    margin-top: 40pt;
+    padding-top: 15pt;
+    border-top: 1px solid #ccc;
+    font-size: 9pt;
+    color: #777;
+}
+
+.page-break {
+    page-break-after: always;
+}

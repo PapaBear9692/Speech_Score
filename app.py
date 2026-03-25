@@ -3,10 +3,12 @@ import json
 import tempfile
 import logging
 from pathlib import Path
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_file
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
+from weasyprint import HTML, CSS
+import io
 from llama_config import initialize_index
 from prompt import ANALYSIS_PROMPT
 
@@ -20,43 +22,9 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 # ─────────────────────────────────────────────────────────────────────────────
 
-def sanitize_text(text):
-    """
-    A more aggressive sanitizer for LLM output.
-    - Removes leading non-alphanumeric characters.
-    - Collapses multiple whitespace characters.
-    - Fixes text where letters are separated by spaces (e.g., 'H e l l o').
-    """
-    if not isinstance(text, str):
-        return text
 
-    # Remove leading junk characters but keep legitimate sentence starters
-    sanitized = re.sub(r"^[^\w'\"(]+", "", text.strip())
 
-    # Heuristic: If the text has an unusually high ratio of spaces to characters,
-    # it's likely spaced out.
-    char_count = len(sanitized.replace(" ", ""))
-    space_count = sanitized.count(" ")
 
-    # If more than half the string is spaces, and it's not just a few chars,
-    # assume it's an artifact and remove all spaces.
-    if char_count > 5 and space_count > char_count * 0.8:
-        sanitized = "".join(sanitized.split())
-    else:
-        # Otherwise, just collapse multiple spaces into one
-        sanitized = re.sub(r"\s+", " ", sanitized)
-
-    return sanitized.strip()
-
-def sanitize_analysis_result(result):
-    """Recursively sanitizes all string values in the analysis result."""
-    if isinstance(result, dict):
-        return {k: sanitize_analysis_result(v) for k, v in result.items()}
-    elif isinstance(result, list):
-        return [sanitize_analysis_result(item) for item in result]
-    elif isinstance(result, str):
-        return sanitize_text(result)
-    return result
 
 
 # ─── LlamaIndex/Pinecone RAG Setup ──────────────────────────────────────────
@@ -164,16 +132,12 @@ def analyze_speech():
 
         result = json.loads(raw)
 
-        # ─── Sanitize AI Response to Prevent Artifacts ──────────────────────
-        logging.info("Sanitizing AI response...")
-        sanitized_result = sanitize_analysis_result(result)
-        logging.info("Sanitization complete.")
         # ───────────────────────────────────────────────────────────────────
 
         # Clean up uploaded file from Google's servers
         client.files.delete(name=uploaded.name) # type: ignore
         logging.info("Analysis complete. Returning JSON response.")
-        return jsonify({"success": True, "analysis": sanitized_result})
+        return jsonify({"success": True, "analysis": result})
 
     except json.JSONDecodeError as e:
         logging.error(f"JSONDecodeError: Could not parse AI response. Raw text: {response.text}", exc_info=True)
@@ -189,6 +153,37 @@ def analyze_speech():
         except Exception as e:
             logging.error(f"Failed to delete temp file: {tmp_path}", exc_info=True)
             pass
+
+
+@app.route("/download_report", methods=["POST"])
+def download_report():
+    analysis_data = request.json
+    if not analysis_data:
+        logging.error("PDF Generation failed: No analysis data provided.")
+        return jsonify({"error": "No analysis data provided"}), 400
+
+    try:
+        logging.info("Generating PDF report...")
+        # Render the HTML template with the analysis data
+        html_string = render_template('report.html', analysis=analysis_data)
+        
+        # Define the path to the CSS file
+        css_path = os.path.join(os.path.dirname(__file__), 'static', 'css', 'report.css')
+        
+        # Generate PDF using WeasyPrint
+        pdf_bytes = HTML(string=html_string, base_url=request.base_url).write_pdf(stylesheets=[CSS(css_path)])
+        
+        logging.info("PDF report generated successfully.")
+        # Return the PDF as a downloadable file
+        return send_file(
+            io.BytesIO(pdf_bytes),
+            as_attachment=True,
+            download_name='Speech_Score_Analysis.pdf',
+            mimetype='application/pdf'
+        )
+    except Exception as e:
+        logging.error(f"Error generating PDF report: {e}", exc_info=True)
+        return jsonify({"error": "Failed to generate PDF report"}), 500
 
 
 if __name__ == "__main__":

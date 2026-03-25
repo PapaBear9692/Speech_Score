@@ -237,192 +237,51 @@ function reset() {
   chunks = [];
 }
 
-function downloadPDF() {
+async function downloadPDF() {
   const analysis = window.currentAnalysis;
-  if (!analysis) { showErr('No analysis data available'); return; }
-  
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  let yPos = 20;
-  const lineHeight = 5;
-  const margin = 15;
-  const contentWidth = pageWidth - margin * 2;
-  
-  // Header
-  doc.setFontSize(24);
-  doc.setFont(undefined, 'bold');
-  doc.text('Speech Score Analysis', margin, yPos);
-  yPos += 12;
-  doc.setFontSize(10);
-  doc.setFont(undefined, 'normal');
-  doc.text(`Generated: ${new Date().toLocaleString()}`, margin, yPos);
-  yPos += 15;
-  
-  // Overall Score Section
-  doc.setFontSize(14);
-  doc.setFont(undefined, 'bold');
-  doc.text('Overall Score', margin, yPos);
-  yPos += 8;
-  doc.setFontSize(11);
-  doc.setFont(undefined, 'normal');
-  doc.text(`Score: ${analysis.overall_score ?? 0} / 100`, margin, yPos);
-  yPos += 6;
-  doc.text(`Impression: ${analysis.overall_impression ?? 'N/A'}`, margin, yPos);
-  yPos += 6;
-  doc.text(`Energy Level: ${(analysis.energy_level ?? 'medium').toUpperCase()}`, margin, yPos);
-  yPos += 6;
-  doc.text(`Next Focus: ${analysis.next_practice_focus ?? 'N/A'}`, margin, yPos);
-  yPos += 12;
-  
-  // Performance Dimensions
-  doc.setFontSize(14);
-  doc.setFont(undefined, 'bold');
-  doc.text('Performance Dimensions', margin, yPos);
-  yPos += 8;
-  doc.setFontSize(10);
-  doc.setFont(undefined, 'normal');
-  
-  const dimLabels = {
-    clarity: 'Clarity', tone_confidence: 'Tone & Confidence', pacing: 'Pacing',
-    product_knowledge: 'Product Knowledge', persuasiveness: 'Persuasiveness', vocabulary: 'Vocabulary'
-  };
-  
-  for (const [key, label] of Object.entries(dimLabels)) {
-    const dim = (analysis.dimensions ?? {})[key] ?? {};
-    const score = dim.score ?? 0;
-    const feedback = dim.feedback ?? '';
-    const text = `${label}: ${score}/100`;
-    if (feedback) {
-      const feedWrapped = doc.splitTextToSize(`  Feedback: ${feedback}`, contentWidth - 10);
-      if (yPos + 12 > pageHeight - 15) { doc.addPage(); yPos = 20; }
-      doc.text(text, margin, yPos);
-      yPos += 5;
-      doc.setFontSize(9);
-      feedWrapped.forEach(line => {
-        if (yPos > pageHeight - 15) { doc.addPage(); yPos = 20; }
-        doc.text(line, margin + 5, yPos);
-        yPos += 4;
-      });
-      doc.setFontSize(10);
-      yPos += 1;
-    } else {
-      if (yPos > pageHeight - 15) { doc.addPage(); yPos = 20; }
-      doc.text(text, margin, yPos);
-      yPos += 5;
-    }
+  if (!analysis) {
+    showErr('No analysis data available to generate a report.');
+    return;
   }
-  yPos += 3;
   
-  // Strengths
-  if (yPos + 10 > pageHeight - 15) { doc.addPage(); yPos = 20; }
-  doc.setFontSize(14);
-  doc.setFont(undefined, 'bold');
-  doc.text('Strengths', margin, yPos);
-  yPos += 8;
-  doc.setFontSize(10);
-  doc.setFont(undefined, 'normal');
-  const strengths = analysis.strengths ?? [];
-  if (strengths.length > 0) {
-    strengths.forEach(s => {
-      if (yPos > pageHeight - 15) { doc.addPage(); yPos = 20; }
-      doc.text(`✓ ${s}`, margin + 5, yPos);
-      yPos += 5;
+  const downloadButton = document.querySelector('button[onclick="downloadPDF()"]');
+  const originalButtonText = downloadButton.innerHTML;
+
+  try {
+    downloadButton.disabled = true;
+    downloadButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Downloading...';
+
+    const res = await fetch('/download_report', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(analysis),
     });
-  } else {
-    doc.text('No strengths identified.', margin + 5, yPos);
-    yPos += 5;
-  }
-  yPos += 3;
-  
-  // Filler Words
-  if (yPos + 10 > pageHeight - 15) { doc.addPage(); yPos = 20; }
-  doc.setFontSize(14);
-  doc.setFont(undefined, 'bold');
-  doc.text('Filler Words', margin, yPos);
-  yPos += 8;
-  doc.setFontSize(10);
-  doc.setFont(undefined, 'normal');
-  const fw = analysis.filler_words ?? {};
-  if (fw.count) {
-    doc.text(`Count: ${fw.count}`, margin + 5, yPos);
-    yPos += 5;
-    if (fw.feedback) {
-      const fwWrapped = doc.splitTextToSize(fw.feedback, contentWidth - 10);
-      fwWrapped.forEach(line => {
-        if (yPos > pageHeight - 15) { doc.addPage(); yPos = 20; }
-        doc.text(line, margin + 5, yPos);
-        yPos += 4;
-      });
+
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.error || 'Failed to generate PDF report');
     }
-    if (fw.words && fw.words.length > 0) {
-      yPos += 2;
-      const wordsText = `Words: ${fw.words.slice(0, 10).join(', ')}`;
-      const wordsWrapped = doc.splitTextToSize(wordsText, contentWidth - 10);
-      wordsWrapped.forEach(line => {
-        if (yPos > pageHeight - 15) { doc.addPage(); yPos = 20; }
-        doc.text(line, margin + 5, yPos);
-        yPos += 4;
-      });
-    }
-  } else {
-    doc.text('No filler words detected.', margin + 5, yPos);
-    yPos += 5;
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = 'Speech_Score_Analysis.pdf';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+
+  } catch (error) {
+    console.error('Error downloading PDF:', error);
+    showErr(error.message);
+  } finally {
+    downloadButton.disabled = false;
+    downloadButton.innerHTML = originalButtonText;
   }
-  yPos += 5;
-  
-  // Transcript
-  if (yPos + 10 > pageHeight - 15) { doc.addPage(); yPos = 20; }
-  doc.setFontSize(14);
-  doc.setFont(undefined, 'bold');
-  doc.text('Transcript', margin, yPos);
-  yPos += 8;
-  doc.setFontSize(9);
-  doc.setFont(undefined, 'normal');
-  const transcript = analysis.transcript ?? 'No transcript available.';
-  const transcriptWrapped = doc.splitTextToSize(transcript, contentWidth);
-  transcriptWrapped.slice(0, 30).forEach(line => {
-    if (yPos > pageHeight - 15) { doc.addPage(); yPos = 20; }
-    doc.text(line, margin, yPos);
-    yPos += 4;
-  });
-  if (transcriptWrapped.length > 30) {
-    doc.text('[... transcript truncated for PDF ...]', margin, yPos);
-  }
-  yPos += 5;
-  
-  // Improvements
-  if (yPos + 10 > pageHeight - 15) { doc.addPage(); yPos = 20; }
-  doc.setFontSize(14);
-  doc.setFont(undefined, 'bold');
-  doc.text('Suggestions for Improvement', margin, yPos);
-  yPos += 8;
-  doc.setFontSize(10);
-  doc.setFont(undefined, 'normal');
-  const improvements = analysis.improvements ?? [];
-  improvements.forEach(imp => {
-    if (yPos > pageHeight - 15) { doc.addPage(); yPos = 20; }
-    doc.setFont(undefined, 'bold');
-    doc.text(`● ${imp.issue}`, margin + 5, yPos);
-    yPos += 5;
-    doc.setFont(undefined, 'normal');
-    const detailWrapped = doc.splitTextToSize(imp.detail, contentWidth - 10);
-    detailWrapped.forEach(line => {
-      if (yPos > pageHeight - 15) { doc.addPage(); yPos = 20; }
-      doc.text(line, margin + 10, yPos);
-      yPos += 4;
-    });
-    const sugWrapped = doc.splitTextToSize(`Suggestion: ${imp.suggestion}`, contentWidth - 10);
-    sugWrapped.forEach(line => {
-      if (yPos > pageHeight - 15) { doc.addPage(); yPos = 20; }
-      doc.text(line, margin + 10, yPos);
-      yPos += 4;
-    });
-    yPos += 3;
-  });
-  
-  doc.save('Speech_Score_Analysis.pdf');
 }
 
 function showErr(msg) { const e = document.getElementById('errBox'); e.textContent = msg; e.classList.add('on'); }
