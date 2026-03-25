@@ -1,80 +1,35 @@
 import os
 import json
 import tempfile
+import logging
 from pathlib import Path
 from flask import Flask, request, jsonify, render_template
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
+from llama_config import initialize_index
+from prompt import ANALYSIS_PROMPT
 
 app = Flask(__name__)
 load_dotenv()
 
+# ─── Logging Setup ────────────────────────────────────────────────────────
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+# ─── LlamaIndex/Pinecone RAG Setup ──────────────────────────────────────────
+vector_index = initialize_index()
+# ─────────────────────────────────────────────────────────────────────────────
+
+
 # Latest google-genai SDK — client is auto-configured from GEMINI_API_KEY env var
 client = genai.Client()
 
-MODEL = "gemini-2.5-flash"  # Use gemini-2.5-flash (stable). Switch to
-                             # "gemini-3-flash-preview" if you have preview access.
+MODEL = "gemini-2.5-flash"
 
-ANALYSIS_PROMPT = """You are an expert speech coach and product presentation trainer.
-Analyze this audio recording of an employee practicing a product sales/presentation speech.
 
-Evaluate the following dimensions and return a JSON object ONLY (no markdown, no backticks):
-
-{
-  "overall_score": <0-100>,
-  "transcript": "<exact words spoken>",
-  "dimensions": {
-    "clarity": {
-      "score": <0-100>,
-      "feedback": "<specific feedback>",
-      "examples": ["<example from speech>"]
-    },
-    "tone_confidence": {
-      "score": <0-100>,
-      "feedback": "<specific feedback>",
-      "examples": ["<example from speech>"]
-    },
-    "pacing": {
-      "score": <0-100>,
-      "feedback": "<specific feedback>",
-      "examples": ["<example from speech>"]
-    },
-    "product_knowledge": {
-      "score": <0-100>,
-      "feedback": "<specific feedback>",
-      "examples": ["<example from speech>"]
-    },
-    "persuasiveness": {
-      "score": <0-100>,
-      "feedback": "<specific feedback>",
-      "examples": ["<example from speech>"]
-    },
-    "vocabulary": {
-      "score": <0-100>,
-      "feedback": "<specific feedback>",
-      "examples": ["<example from speech>"]
-    }
-  },
-  "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
-  "improvements": [
-    {
-      "issue": "<issue title>",
-      "detail": "<detailed explanation>",
-      "suggestion": "<actionable suggestion>"
-    }
-  ],
-  "filler_words": {
-    "count": <number>,
-    "words": ["<each filler word occurrence>"],
-    "feedback": "<advice on reducing filler words>"
-  },
-  "energy_level": "<low|medium|high>",
-  "overall_impression": "<2-3 sentence summary of the speech performance>",
-  "next_practice_focus": "<single most important thing to practice next>"
-}
-
-Be specific, constructive, and encouraging. Reference actual moments from the speech."""
 
 
 @app.route("/")
@@ -84,11 +39,37 @@ def index():
 
 @app.route("/analyze", methods=["POST"])
 def analyze_speech():
+    logging.info("Received request to /analyze")
     if "audio" not in request.files:
+        logging.warning("No audio file provided in the request.")
         return jsonify({"error": "No audio file provided"}), 400
 
     audio_file = request.files["audio"]
     product_context = request.form.get("product_context", "").strip()
+    logging.info(f"Received product context: '{product_context[:100]}...'")
+
+    # ─── RAG Retrieval Step ────────────────────────────────────────────────
+    retrieved_context = ""
+    if product_context:
+        logging.info("Product context provided. Starting RAG retrieval...")
+        try:
+            # Use LlamaIndex retriever to get relevant chunks
+            retriever = vector_index.as_retriever(similarity_top_k=5)
+            nodes = retriever.retrieve(product_context)
+            retrieved_context = "\n\n".join([n.get_content() for n in nodes])
+            logging.info(f"Retrieved {len(nodes)} chunks from vector store.")
+            # ─── Log Retrieved Chunks for Debugging ────────────────────────
+            logging.info("────────────────── RETRIEVED CHUNKS ──────────────────")
+            logging.info(retrieved_context)
+            logging.info("──────────────────────────────────────────────────────")
+            # ───────────────────────────────────────────────────────────────
+        except Exception as e:
+            logging.error(f"Error during RAG retrieval: {e}", exc_info=True)
+            # Fail gracefully, proceed without retrieved context
+            retrieved_context = "Error: Could not retrieve context from vector store."
+    else:
+        logging.info("No product context provided. Skipping RAG retrieval.")
+
 
     # Determine mime type from filename
     filename = audio_file.filename or "audio.webm"
@@ -116,18 +97,22 @@ def analyze_speech():
             config=types.UploadFileConfig(mime_type=mime_type),
         )
 
-        # Build prompt, optionally injecting product context
-        prompt = ANALYSIS_PROMPT
+        # Build prompt, injecting both user-provided and retrieved context
+        final_prompt = ANALYSIS_PROMPT.format(retrieved_context=retrieved_context)
         if product_context:
-            prompt += f"\n\nProduct context provided by trainer:\n{product_context}"
+            final_prompt += f"\n\nOriginal user-provided context:\n{product_context}"
+        logging.info("Prompt constructed. Sending to Gemini for analysis.")
+
 
         # ── Generate analysis ─────────────────────────────────────────────────
         response = client.models.generate_content(
             model=MODEL,
-            contents=[prompt, uploaded],
+            contents=[final_prompt, uploaded],
         )
 
         raw = response.text.strip() # type: ignore
+        logging.info("Received response from Gemini.")
+        logging.debug(f"Raw Gemini response: {raw}")
 
         # Strip accidental markdown fences
         if raw.startswith("```"):
@@ -140,19 +125,23 @@ def analyze_speech():
         result = json.loads(raw)
 
         # Clean up uploaded file from Google's servers
-        client.files.delete(name=uploaded.name)
-
+        client.files.delete(name=uploaded.name) # type: ignore
+        logging.info("Analysis complete. Returning JSON response.")
         return jsonify({"success": True, "analysis": result})
 
     except json.JSONDecodeError as e:
-        return jsonify({"error": f"Could not parse AI response: {e}", "raw": response.text}), 500
+        logging.error(f"JSONDecodeError: Could not parse AI response. Raw text: {response.text}", exc_info=True)
+        return jsonify({"error": f"Could not parse AI response: {e}", "raw": response.text}), 500 # type: ignore
     except Exception as e:
+        logging.error(f"An unexpected error occurred: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
     finally:
         # Always clean up local temp file
         try:
             os.unlink(tmp_path)
-        except Exception:
+            logging.info(f"Successfully deleted temp file: {tmp_path}")
+        except Exception as e:
+            logging.error(f"Failed to delete temp file: {tmp_path}", exc_info=True)
             pass
 
 
