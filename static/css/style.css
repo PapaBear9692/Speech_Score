@@ -169,7 +169,7 @@ body::before {
 }
 
 .results {
-  scroll-margin-top: 5px; /* Adjust this value to your desired offset */
+  scroll-margin-top: 90px; /* Adjust this value to your desired offset */
 }
 
 
