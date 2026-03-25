@@ -139,6 +139,8 @@ async function submit(blob, name) {
       document.getElementById('loader').classList.remove('on');
       render(data.analysis);
       contextInput.value = ''; // Clear the textarea
+      const element = document.querySelector('results');
+      element.scrollIntoView({ block: 'start', behavior: 'smooth' });
     }, 600);
   } catch(e) {
     document.getElementById('loader').classList.remove('on');
@@ -269,7 +271,19 @@ async function downloadPDF() {
     const a = document.createElement('a');
     a.style.display = 'none';
     a.href = url;
-    a.download = 'Speech_Score_Analysis.pdf';
+
+    // Get filename from Content-Disposition header
+    const disposition = res.headers.get('Content-Disposition');
+    let filename = 'Speech_Score_Analysis.pdf'; // default
+    if (disposition && disposition.indexOf('attachment') !== -1) {
+        const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+        const matches = filenameRegex.exec(disposition);
+        if (matches != null && matches[1]) { 
+          filename = matches[1].replace(/['"]/g, '');
+        }
+    }
+    a.download = filename;
+    
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);

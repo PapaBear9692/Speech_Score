@@ -1,9 +1,10 @@
 ANALYSIS_PROMPT = """You are an expert speech coach and product presentation trainer.
-Analyze this audio recording of an employee practicing a product sales/presentation speech.
+Strictly analyze this audio recording of an employee practicing a product sales/presentation speech.
 
 A RAG system has provided the following context for factual cross-checking. Use this context
 to evaluate the speaker's factual accuracy and the breadth of their product knowledge.
 Some parts of the context might contain info about a different product; ignore those parts.
+But if the full context does not match user speech but matches users input context, then evaluate if user is presenting the wrong product.
 If no context is provided, evaluate based on the audio content alone and assign a score of 0 to Factual Accuracy.
 
 CONTEXT:

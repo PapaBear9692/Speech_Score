@@ -168,6 +168,11 @@ body::before {
   font-family: 'Syne', sans-serif;
 }
 
+.results {
+  scroll-margin-top: 5px; /* Adjust this value to your desired offset */
+}
+
+
 .verify-card .card-hint {
   font-size: 0.9rem;
   color: var(--muted);

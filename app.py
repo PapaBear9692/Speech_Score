@@ -1,7 +1,7 @@
+from datetime import datetime
 import os
 import json
 import tempfile
-import logging
 from pathlib import Path
 from flask import Flask, request, jsonify, render_template, send_file
 from google import genai
@@ -12,19 +12,9 @@ import io
 from llama_config import initialize_index
 from prompt import ANALYSIS_PROMPT
 
-import re
 
 app = Flask(__name__)
 load_dotenv()
-
-# ─── Logging Setup ────────────────────────────────────────────────────────
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s - %(levelname)s - %(message)s')
-# ─────────────────────────────────────────────────────────────────────────────
-
-
-
-
 
 
 # ─── LlamaIndex/Pinecone RAG Setup ──────────────────────────────────────────
@@ -47,36 +37,23 @@ def index():
 
 @app.route("/analyze", methods=["POST"])
 def analyze_speech():
-    logging.info("Received request to /analyze")
     if "audio" not in request.files:
-        logging.warning("No audio file provided in the request.")
         return jsonify({"error": "No audio file provided"}), 400
 
     audio_file = request.files["audio"]
     product_context = request.form.get("product_context", "").strip()
-    logging.info(f"Received product context: '{product_context[:100]}...'")
 
     # ─── RAG Retrieval Step ────────────────────────────────────────────────
     retrieved_context = ""
     if product_context:
-        logging.info("Product context provided. Starting RAG retrieval...")
         try:
             # Use LlamaIndex retriever to get relevant chunks
             retriever = vector_index.as_retriever(similarity_top_k=5)
             nodes = retriever.retrieve(product_context)
-            retrieved_context = "\n\n".join([n.get_content() for n in nodes])
-            logging.info(f"Retrieved {len(nodes)} chunks from vector store.")
-            # ─── Log Retrieved Chunks for Debugging ────────────────────────
-            logging.info("────────────────── RETRIEVED CHUNKS ──────────────────")
-            logging.info(retrieved_context)
-            logging.info("──────────────────────────────────────────────────────")
-            # ───────────────────────────────────────────────────────────────
+            retrieved_context = product_context + "\n\n" + "\n\n".join([n.get_content() for n in nodes])
         except Exception as e:
-            logging.error(f"Error during RAG retrieval: {e}", exc_info=True)
             # Fail gracefully, proceed without retrieved context
             retrieved_context = "Error: Could not retrieve context from vector store."
-    else:
-        logging.info("No product context provided. Skipping RAG retrieval.")
 
 
     # Determine mime type from filename
@@ -109,7 +86,6 @@ def analyze_speech():
         final_prompt = ANALYSIS_PROMPT.format(retrieved_context=retrieved_context)
         if product_context:
             final_prompt += f"\n\nOriginal user-provided context:\n{product_context}"
-        logging.info("Prompt constructed. Sending to Gemini for analysis.")
 
 
         # ── Generate analysis ─────────────────────────────────────────────────
@@ -119,8 +95,6 @@ def analyze_speech():
         )
 
         raw = response.text.strip() # type: ignore
-        logging.info("Received response from Gemini.")
-        logging.debug(f"Raw Gemini response: {raw}")
 
         # Strip accidental markdown fences
         if raw.startswith("```"):
@@ -136,22 +110,17 @@ def analyze_speech():
 
         # Clean up uploaded file from Google's servers
         client.files.delete(name=uploaded.name) # type: ignore
-        logging.info("Analysis complete. Returning JSON response.")
         return jsonify({"success": True, "analysis": result})
 
     except json.JSONDecodeError as e:
-        logging.error(f"JSONDecodeError: Could not parse AI response. Raw text: {response.text}", exc_info=True)
         return jsonify({"error": f"Could not parse AI response: {e}", "raw": response.text}), 500 # type: ignore
     except Exception as e:
-        logging.error(f"An unexpected error occurred: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
     finally:
         # Always clean up local temp file
         try:
             os.unlink(tmp_path)
-            logging.info(f"Successfully deleted temp file: {tmp_path}")
         except Exception as e:
-            logging.error(f"Failed to delete temp file: {tmp_path}", exc_info=True)
             pass
 
 
@@ -159,11 +128,14 @@ def analyze_speech():
 def download_report():
     analysis_data = request.json
     if not analysis_data:
-        logging.error("PDF Generation failed: No analysis data provided.")
         return jsonify({"error": "No analysis data provided"}), 400
 
     try:
-        logging.info("Generating PDF report...")
+        # Add generation date and create dynamic filename
+        now = datetime.now()
+        analysis_data['generated_date'] = now.strftime("%B %d, %Y at %I:%M %p")
+        download_name = now.strftime("%B_%d_%H_%M_Speech_Score_Analysis.pdf")
+        
         # Render the HTML template with the analysis data
         html_string = render_template('report.html', analysis=analysis_data)
         
@@ -173,16 +145,14 @@ def download_report():
         # Generate PDF using WeasyPrint
         pdf_bytes = HTML(string=html_string, base_url=request.base_url).write_pdf(stylesheets=[CSS(css_path)])
         
-        logging.info("PDF report generated successfully.")
         # Return the PDF as a downloadable file
         return send_file(
-            io.BytesIO(pdf_bytes),
+            io.BytesIO(pdf_bytes), # type: ignore
             as_attachment=True,
-            download_name='Speech_Score_Analysis.pdf',
+            download_name=download_name,
             mimetype='application/pdf'
         )
     except Exception as e:
-        logging.error(f"Error generating PDF report: {e}", exc_info=True)
         return jsonify({"error": "Failed to generate PDF report"}), 500
 
 
