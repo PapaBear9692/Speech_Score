@@ -421,6 +421,10 @@ header {
   text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin-bottom: 16px;
 }
 
+#file-name-display{
+  color: #495057 !important;
+}
+
 /* ── Context field ── */
 .field { margin-bottom: 28px; }
 .field label { display: block; font-size: 14px; color: var(--muted); margin-bottom: 8px; font-weight: 500; }
@@ -541,7 +545,18 @@ header {
 .bar-fill { height: 100%; border-radius: 3px; transition: width 1s cubic-bezier(.4,0,.2,1); }
 
 /* Transcript */
-.transcript { background: #f8f9fa; border-radius: 10px; padding: 18px; font-size: 15px; line-height: 1.8; max-height: 170px; overflow-y: auto; font-style: italic; color: #6b7280; border: 1px solid rgba(0, 0, 0, 0.05); }
+.transcript { 
+  background: #f8f9fa; 
+  border-radius: 10px; 
+  padding: 18px; 
+  font-size: 15px; 
+  line-height: 1.8; 
+  max-height: 300px; 
+  overflow-y: auto; 
+  font-style: italic; 
+  color: #6b7280; 
+  border: 1px solid rgba(0, 0, 0, 0.05); 
+}
 
 /* Tags */
 .tags { display: flex; flex-wrap: wrap; gap: 8px; }
