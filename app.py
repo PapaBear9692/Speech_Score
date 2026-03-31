@@ -160,4 +160,4 @@ if __name__ == "__main__":
     if not os.environ.get("GEMINI_API_KEY"):
         print("⚠️  GEMINI_API_KEY not set — set it before starting.")
     print("🎙️  Speech Score running → http://localhost:5000")
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5003)
