@@ -78,7 +78,8 @@ function drawWave() {
 function handleFileUpload(file) {
     if (file && file.type.startsWith('audio/')) {
         uploadedFile = file;
-        document.getElementById('file-name-display').textContent = `File: ${file.name}`;
+        document.getElementById('file-name-display').textContent = `📎 ${file.name}`;
+        document.getElementById('file-name-wrapper').style.display = 'block';
         
         // Hide recording controls and show the upload submit button
         document.getElementById('startBtn').style.display = 'none';
@@ -230,6 +231,7 @@ function reset() {
   // Reset UI for new submission
   uploadedFile = null;
   document.getElementById('file-name-display').textContent = '';
+  document.getElementById('file-name-wrapper').style.display = 'none';
   document.getElementById('upload-submit-button').style.display = 'none';
   document.getElementById('startBtn').style.display = 'inline-block';
   document.getElementById('startBtn').disabled = false;
@@ -296,6 +298,19 @@ async function downloadPDF() {
     downloadButton.disabled = false;
     downloadButton.innerHTML = originalButtonText;
   }
+}
+
+function removeFile() {
+  uploadedFile = null;
+  document.getElementById('file-name-display').textContent = '';
+  document.getElementById('file-name-wrapper').style.display = 'none';
+  document.getElementById('fileInput').value = '';
+  document.getElementById('upload-submit-button').style.display = 'none';
+  document.getElementById('startBtn').style.display = 'inline-block';
+  document.getElementById('stopBtn').style.display = 'inline-block';
+  document.getElementById('dropzone').style.display = '';
+  clearErr();
+  clearInputWarning();
 }
 
 function showErr(msg) { const e = document.getElementById('errBox'); e.textContent = msg; e.classList.add('on'); }

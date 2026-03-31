@@ -36,12 +36,13 @@ body::before {
   background: var(--surface);
   border-bottom: 1px solid rgba(0, 0, 0, 0.03);
   height: auto;
-  padding: 1rem 0;
+  padding: 5px 0;
   display: flex;
   align-items: center;
   position: sticky;
   top: 0;
   z-index: 99;
+  margin-bottom: 0px;
 }
 
 .app-header .brand {
@@ -86,7 +87,7 @@ body::before {
 
 /* ── Page Wrapper ── */
 .page-wrapper {
-  padding: 3.5rem 0 3rem;
+  padding: 40px 0 3rem;
   position: relative;
   z-index: 1;
 }
@@ -164,7 +165,7 @@ body::before {
 .verify-card .card-title {
   font-size: 1.35rem;
   font-weight: 600;
-  margin-bottom: 0.5rem;
+  margin-bottom: 5px;
   font-family: 'Syne', sans-serif;
 }
 
@@ -176,7 +177,7 @@ body::before {
 .verify-card .card-hint {
   font-size: 0.9rem;
   color: var(--muted);
-  margin-bottom: 1.5rem;
+  margin-bottom: 10px;
 }
 
 .verify-form .form-group label {
@@ -294,8 +295,8 @@ body::before {
 .app-footer {
   background: var(--surface);
   border-top: 1px solid rgba(0, 0, 0, 0.03);
-  padding: 2rem 0;
-  margin-top: 3rem;
+  padding: 15px 0;
+  margin-top: 10px;
 }
 
 .footer-links {
@@ -420,6 +421,10 @@ header {
   text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin-bottom: 16px;
 }
 
+#file-name-display{
+  color: #495057 !important;
+}
+
 /* ── Context field ── */
 .field { margin-bottom: 28px; }
 .field label { display: block; font-size: 14px; color: var(--muted); margin-bottom: 8px; font-weight: 500; }
@@ -462,7 +467,7 @@ header {
 
 /* ── Drop zone ── */
 .dropzone {
-  margin-top: 24px; border: 2px dashed rgba(2, 127, 15, .3); border-radius: 12px;
+  margin-top: 15px; border: 2px dashed rgba(2, 127, 15, .3); border-radius: 12px;
   padding: 24px; text-align: center; cursor: pointer; transition: all .2s;
 }
 .dropzone:hover, .dropzone.over { border-color: var(--brand); background: var(--brand-soft); }
@@ -540,7 +545,18 @@ header {
 .bar-fill { height: 100%; border-radius: 3px; transition: width 1s cubic-bezier(.4,0,.2,1); }
 
 /* Transcript */
-.transcript { background: #f8f9fa; border-radius: 10px; padding: 18px; font-size: 15px; line-height: 1.8; max-height: 170px; overflow-y: auto; font-style: italic; color: #6b7280; border: 1px solid rgba(0, 0, 0, 0.05); }
+.transcript { 
+  background: #f8f9fa; 
+  border-radius: 10px; 
+  padding: 18px; 
+  font-size: 15px; 
+  line-height: 1.8; 
+  max-height: 300px; 
+  overflow-y: auto; 
+  font-style: italic; 
+  color: #6b7280; 
+  border: 1px solid rgba(0, 0, 0, 0.05); 
+}
 
 /* Tags */
 .tags { display: flex; flex-wrap: wrap; gap: 8px; }

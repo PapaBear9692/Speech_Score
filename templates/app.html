@@ -32,7 +32,7 @@
   <main class="page-wrapper">
     <div class="container">
       <!-- Hero + Form Section -->
-      <div class="row align-items-center justify-content-center g-4 mb-5">
+      <div class="row align-items-center justify-content-center g-4 mb-0">
         <!-- Left: Hero Copy -->
         <div class="col-lg-6 pr-lg-5 hero-copy">
           <p class="small-badge">Gemini 2.5 Flash • Real-time Analysis • AI-Powered</p>
@@ -64,7 +64,10 @@
                 <textarea id="ctx" class="form-control form-textarea-lg" placeholder="e.g., Presentation on Seclo 20 capsules…"></textarea>
               </div>
 
-              <p id="file-name-display" style="text-align: center; margin-top: 10px; color: #ccc;"></p>
+              <div id="file-name-wrapper" style="display:none; position:relative; background:#f8f9fa; border:1px solid rgba(0,0,0,0.08); border-radius:0.65rem; padding:10px 40px 10px 14px; margin-top:10px;">
+                <p id="file-name-display" style="margin:0; font-size:0.875rem; color:#495057; word-break:break-all;"></p>
+                <button onclick="removeFile()" type="button" style="position:absolute; top:50%; right:10px; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:#6c757d; font-size:1.1rem; line-height:1; padding:2px 4px;" title="Remove file">✕</button>
+              </div>
 
               <div class="wave-wrap" id="waveWrap"><canvas id="waveform" width="900" height="64"></canvas></div>
 
@@ -153,14 +156,14 @@
             <div class="col-lg-6 mb-4">
               <div class="card card-uniform card-compact">
                 <h3>✅ Strengths</h3>
-                <div class="tags card-content" id="strengths"></div>
+                <div class="tags" id="strengths"></div>
               </div>
             </div>
             <div class="col-lg-6 mb-4">
               <div class="card card-uniform card-compact">
                 <h3>🔤 Filler Words</h3>
                 <p style="font-size:13px;color:var(--muted);margin-bottom:10px" id="fillerNote">—</p>
-                <div class="tags card-content" id="fillerTags"></div>
+                <div class="tags" id="fillerTags"></div>
               </div>
             </div>
           </div>
