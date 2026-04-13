@@ -11,9 +11,14 @@ from weasyprint import HTML, CSS
 import io
 from llama_config import initialize_index
 from prompt import ANALYSIS_PROMPT
+from werkzeug.middleware.proxy_fix import ProxyFix  # ✅ added
 
 
 app = Flask(__name__)
+
+app.config['APPLICATION_ROOT'] = '/speech'  # ✅ added
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1, x_prefix=1)  # ✅ added
+
 load_dotenv()
 
 
@@ -143,7 +148,7 @@ def download_report():
         css_path = os.path.join(os.path.dirname(__file__), 'static', 'css', 'report.css')
         
         # Generate PDF using WeasyPrint
-        pdf_bytes = HTML(string=html_string, base_url=request.base_url).write_pdf(stylesheets=[CSS(css_path)])
+        pdf_bytes = HTML(string=html_string, base_url=request.url_root).write_pdf(stylesheets=[CSS(css_path)])  # ✅ updated
         
         # Return the PDF as a downloadable file
         return send_file(
@@ -159,5 +164,5 @@ def download_report():
 if __name__ == "__main__":
     if not os.environ.get("GEMINI_API_KEY"):
         print("⚠️  GEMINI_API_KEY not set — set it before starting.")
-    print("🎙️  Speech Score running → http://localhost:5000")
-    app.run(debug=True, port=5003)
+    print("🎙️  Speech Score running → http://localhost:8000")
+    app.run(host="0.0.0.0", debug=True, port=8000)  # ✅ updated

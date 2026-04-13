@@ -6,6 +6,9 @@ __pycache__/
 model_cache/
 # C extensions
 *.so
+.venv
+.spenv
+.spvenv
 
 # Distribution / packaging
 .Python
