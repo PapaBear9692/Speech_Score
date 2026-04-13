@@ -30,7 +30,7 @@ vector_index = initialize_index()
 # Latest google-genai SDK — client is auto-configured from GEMINI_API_KEY env var
 client = genai.Client()
 
-MODEL = "gemini-2.5-flash"
+MODEL = "gemini-3-flash-preview" #"gemini-2.5-flash"
 
 
 
