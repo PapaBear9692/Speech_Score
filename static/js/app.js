@@ -127,7 +127,7 @@ async function submit(blob, name) {
   fd.append('product_context', contextInput.value);
 
   try {
-    const res  = await fetch('/analyze', { method: 'POST', body: fd });
+    const res  = await fetch('/speech/analyze', { method: 'POST', body: fd });
     const data = await res.json();
     if (data.error) { 
       document.getElementById('loader').classList.remove('on');
@@ -255,7 +255,7 @@ async function downloadPDF() {
     downloadButton.disabled = true;
     downloadButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Downloading...';
 
-    const res = await fetch('/download_report', {
+    const res = await fetch('/speech/download_report', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
